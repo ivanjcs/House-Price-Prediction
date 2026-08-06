@@ -1,14 +1,14 @@
-import os
 import pandas as pd
 from google.cloud import bigquery
-from dotenv import load_dotenv
 
-# Cargamos las variables de entorno desde el archivo .env
-load_dotenv()
+# Importamos config para que al ejecutarse este script, 
+# se carguen las variables de entorno automáticamente.
+import config 
 
 def get_bq_client() -> bigquery.Client:
     """Inicializa y retorna el cliente de BigQuery de forma segura."""
     # GCP busca automáticamente la variable GOOGLE_APPLICATION_CREDENTIALS 
+    # que ya fue cargada en el entorno por config.py
     try:
         client = bigquery.Client()
         print("✅ Cliente de BigQuery inicializado correctamente.")
@@ -56,7 +56,6 @@ def get_test_data(client: bigquery.Client) -> tuple[pd.DataFrame, pd.Series]:
     return X_test, ids_submission
 
 # Este bloque permite probar el script individualmente 
-# sin afectar al resto del sistema si es importado.
 if __name__ == "__main__":
     bq_client = get_bq_client()
     df_entrenamiento = get_train_data(bq_client)
