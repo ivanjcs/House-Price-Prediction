@@ -1,12 +1,12 @@
 # 🏠 Ames Real Estate Pricing Engine | End-to-End ML Architecture
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)
 ![XGBoost](https://img.shields.io/badge/XGBoost-%23178C3A.svg?logo=xgboost&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![dbt](https://img.shields.io/badge/dbt-FF694B?logo=dbt&logoColor=white)
 ![Optuna](https://img.shields.io/badge/Optuna-blue?logo=optuna&logoColor=white)
-![Docker]
-![BigQuery]
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![BigQuery](https://img.shields.io/badge/BigQuery-669DF6?logo=google-bigquery&logoColor=white)
 
 ## 📌 Visión General del Negocio
 
