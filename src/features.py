@@ -145,6 +145,43 @@ class UniversalFeatureEngineer(BaseEstimator, TransformerMixin):
         else:
             return nuevas_cols
 
+from xgboost import XGBRegressor
+
+class FScoreFeatureSelector(BaseEstimator, TransformerMixin):
+    """
+    Entrena un XGBoost interno para evaluar la importancia de las variables (F-Score).
+    Memoriza qué columnas superan el umbral y poda el resto en el método transform().
+    """
+    def __init__(self, threshold=2, random_state=42):
+        self.threshold = threshold
+        self.random_state = random_state
+        self.features_to_keep_ = []
+
+    def fit(self, X, y):
+        # 1. Entrenamos un modelo evaluador silencioso
+        evaluator = XGBRegressor(random_state=self.random_state, n_jobs=-1)
+        evaluator.fit(X, y)
+
+        # 2. Extraemos los F-Scores
+        booster = evaluator.get_booster()
+        f_scores = booster.get_score(importance_type='weight')
+
+        # 3. Guardamos en memoria solo las columnas que superan el umbral
+        self.features_to_keep_ = [
+            col for col in X.columns 
+            if int(f_scores.get(col, 0)) > self.threshold
+        ]
+        
+        print(f"✂️ Feature Selection: De {X.shape[1]} variables, se conservan {len(self.features_to_keep_)}.")
+        return self
+
+    def transform(self, X):
+        # Filtramos el DataFrame para devolver solo las columnas ganadoras
+        return X[self.features_to_keep_].copy()
+
+    def get_feature_names_out(self, input_features=None):
+        return self.features_to_keep_
+
 # ==============================================================================
 # 2. FUNCIONES DE INGENIERÍA Y CONSTANTES DE NEGOCIO
 # ==============================================================================
@@ -214,9 +251,11 @@ def build_preprocessor() -> Pipeline:
     # 3. Enrutador Base
     preprocesador_base = ColumnTransformer(
         transformers=[
+            ('logaritmo_seguro', SafeLog1pTransformer()),
             ('simple_nominal', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), direct_ohe_cols),
             ('complex_nominal', complex_nominal_pipeline, complex_nominal_cols),
             ('neighborhood_kmeans', TargetKMeansClusterer(n_clusters=3), neighborhood_col)
+            ('seleccion_fscore', FScoreFeatureSelector(threshold=2))
         ],
         remainder='passthrough' 
     )
@@ -228,6 +267,6 @@ def build_preprocessor() -> Pipeline:
         ('feature_engineering_dinamico', UniversalFeatureEngineer(feature_functions=MIS_NUEVAS_REGLAS))
     ])
     
-    pipeline_maestro.set_output(transform="pandas")
+    preprocesador_base.set_output(transform="pandas")
     
-    return pipeline_maestro
+    return preprocesador_base
