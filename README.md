@@ -82,6 +82,29 @@ ames_pricing_system/
 └── README.md                # Documentación del sistema
 ```
 
+# 📈 Estrategia de Escalamiento a Big Data (Pragmatismo Industrial)
+
+La arquitectura actual de este repositorio prioriza la integridad estadística estricta (Cero Data Leakage) ejecutando todas las transformaciones espacial-temporales y la poda por $F\text{-score}$ dentro de cada iteración del K-Fold. Si bien este enfoque es ideal estadísticamente para datasets pequeños (~1,400 registros), aplicar esta recursividad a un entorno transaccional real de más de 5 millones de registros generaría un overhead computacional insostenible.
+
+Para desplegar este motor de precios en un entorno masivo corporativo, la arquitectura debe pivotar hacia el pragmatismo computacional mediante tres pilares de optimización:
+
+## 1. Shift-Left Analytics
+El motor de Python (Scikit-Learn) no debe utilizar su memoria RAM para cálculos deterministas. En un entorno de Big Data, todas las transformaciones estáticas se delegarian hacia atrás en la arquitectura, directamente al Data Warehouse.
+- Impacto: Python solo ingiere la matriz pre-procesada y reserva su capacidad de cómputo exclusivamente para operaciones dinámicas dependientes del Target que SQL no puede manejar eficientemente (Target Encoding cruzado, Clustering K-Means de coordenadas y entrenamiento del XGBoost).
+
+## Poda Asíncrona (Proxy Sampling)
+
+Recalcular el algoritmo FScoreFeatureSelector dentro del pipeline de optimización bayesiana en millones de registros multiplica el costo de hardware por cada prueba.
+
+- Se extrae una muestra estratificada representativa (ej. 150,000 registros). Se entrena un modelo XGBoost aislado sobre esta muestra para extraer los $F\text{-scores}$, identificando las variables ruidosas ($F \le 2$). Esta lista negra de columnas se congela.
+- Impacto: El pipeline de producción principal ya no calcula los scores dinámicamente; simplemente aplica un filtro estático de exclusión basado en la lista congelada, liberando a Optuna para buscar hiperparámetros en el espacio limpio de forma ultrarrápid
+
+## Transición de K-Fold a Hold-Out Validation
+La validacion cruzada es una herramienta diseñada para mitigar la alta varianza estadísitca inherente en datasets.
+
+- Implementación: Apoyándonos en la Ley de los Grandes Números, al superar el umbral del medio millón de registros, la varianza estadística de las particiones se estabiliza. Reemplazamos el costoso 5-Fold CV por una única partición estructurada Hold-out (ej. 80% Train, 10% Validation para Early Stopping, 10% Test).
+- Impacto: Reducción inmediata del 80% en los tiempos de cómputo y costos de Cloud Computing en la fase de ajuste de Optuna, manteniendo una métrica de generalización (RMSLE) altamente confiable.
+
 # 🚀 Cómo ejecutar el proyecto
 1. Entorno Virtual y Dependencias
 Bash
